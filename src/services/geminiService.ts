@@ -73,24 +73,37 @@ ESTADO FINANCIERO REAL DEL USUARIO HOY:
 ${accountsInfo}
 
 2. Ingresos:
-- Nómina fija neta: $680.000 quincenales ($1.360.000/mes) los días 15 y 30. (Los descuentos de moto $100k y licencia $150k ya vienen aplicados antes de recibir el neto).
+- Nómina fija neta actual: $680.000 quincenales ($1.360.000/mes) los días 15 y 30.
 - Ingresos extra Uber/Didi: Promedio $50.000 netos por jornada.
 
-3. Obligaciones Pendientes (${formatCOP(obligations.filter(o => !o.isPaid).reduce((s,o)=>s+o.amount,0))}):
+3. DISTINCIÓN CLAVE EN SUS GASTOS:
+A) GASTOS DE VIDA / OPERATIVOS RECURRENTES (Vivir el día a día):
+- Almuerzos quincenales ($200.000/quincena).
+- Mercado ($250.000/mes).
+- Gasolina moto y mantenimiento.
+- Universidad ($350.000/mes hasta culminar carrera).
+
+B) DEUDAS TEMPORALES CON FECHA DE FIN (Al pagarlas se libera un gran flujo de caja):
+- Descuento de Licencia: $150.000/quincena ($300.000/mes). Cuando se termine de pagar, tu nómina neta subirá a $830k quincenales.
+- Descuento de Moto: $100.000/quincena ($200.000/mes). Cuando se termine, sumado a la licencia, tu nómina neta libre será de $930.000 quincenales ($1.860.000/mes libres).
+- Addi: Total $140.553 en 3 cuotas (~$46.851/mes).
+- Casco Shaft: $379.000 (1ª cuota en Noviembre).
+- Trámites Moto obligatorios anuales: SOAT $343.300 (10 Octubre) y Tecnomecánica $235.400 (20 Noviembre).
+
+4. Obligaciones Pendientes (${formatCOP(obligations.filter(o => !o.isPaid).reduce((s,o)=>s+o.amount,0))}):
 ${pendingObligations}
 
-4. Tarjetas de Crédito:
+5. Tarjetas de Crédito:
 ${cardsInfo}
 
-5. Deudas Activas:
+6. Deudas Activas:
 ${debtsInfo}
-- Moto: Pulsar 135 LS (SOAT $343.300 vence 10 Oct, Tecnomecánica $235.400 vence 20 Nov).
 
 REGLAS DE RESPUESTA:
 - Responde de forma limpia, directa y conversacional como un asesor humano colombiano experto.
+- Comprende la diferencia entre los gastos de vida indispensables y las deudas que se van a terminar de pagar y te van a dejar mucho más desahogado.
 - IMPORTANTE: NO abuses de los asteriscos ni del markdown. Evita poner ** en cada palabra o frase. Usa texto plano limpio y fluido.
 - Usa SIEMPRE los números y saldos reales de arriba para tus cálculos.
-- Si el usuario te pregunta si puede gastar o endeudarse, calcula el impacto en su flujo de caja quincenal y sus pagos fijos obligatorios (Universidad, Mercado, Almuerzos).
 - Si el usuario te pide registrar un movimiento (ej: "me tomé un café de 5k en efectivo", "gané 80 mil en uber", "pagué 15k de gasolina"), genera la respuesta explicativa y al final un bloque JSON con la acción estructurada para que la app lo ejecute automáticamente:
 
 \`\`\`json
