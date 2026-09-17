@@ -10,28 +10,35 @@ export interface SupabaseConfig {
 }
 
 export function getStoredSupabaseConfig(): SupabaseConfig {
+  const defaultUrl = 'https://xdexbunttiykmaykpoyr.supabase.co';
+  const defaultAnonKey = 'sb_publishable_AoWQ1iCtVWRQ_FBf_EhKsg_I3IM5MzS';
+
   if (typeof window === 'undefined') {
-    return { url: '', anonKey: '', syncPin: 'svr-2026', isEnabled: false };
+    return { url: defaultUrl, anonKey: defaultAnonKey, syncPin: 'svr-2026', isEnabled: true };
   }
 
   const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed.url) parsed.url = defaultUrl;
+      if (!parsed.anonKey) parsed.anonKey = defaultAnonKey;
+      if (parsed.isEnabled === undefined) parsed.isEnabled = true;
+      return parsed;
     } catch {
       // fallback
     }
   }
 
-  // Fallback to environment variables if provided at build time
-  const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-  const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  // Fallback to environment variables or hardcoded project defaults
+  const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || defaultUrl;
+  const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || defaultAnonKey;
 
   return {
     url: envUrl,
     anonKey: envKey,
     syncPin: 'svr-2026',
-    isEnabled: Boolean(envUrl && envKey),
+    isEnabled: true,
   };
 }
 
