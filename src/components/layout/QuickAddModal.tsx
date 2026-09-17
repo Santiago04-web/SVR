@@ -384,56 +384,66 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose })
               </label>
               <select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                onChange={(e) => {
+                  const newPm = e.target.value as PaymentMethod;
+                  setPaymentMethod(newPm);
+                  if (newPm === 'efectivo') {
+                    const cashAcc = accounts.find((a) => a.type === 'efectivo');
+                    if (cashAcc) setAccountId(cashAcc.id);
+                  } else if (newPm === 'debito' || newPm === 'transferencia') {
+                    const mainAcc = accounts.find((a) => a.isMain || a.id === 'bancolombia') || accounts[0];
+                    if (mainAcc) setAccountId(mainAcc.id);
+                  }
+                }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
               >
-                <option value="debito">Débito / Cuenta</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta_credito">Tarjeta de Crédito</option>
-                <option value="addi">Addi / Crédito</option>
+                <option value="debito">Débito / Bancos</option>
+                <option value="efectivo">💵 Efectivo (Bolsillo)</option>
+                <option value="transferencia">📱 Transferencia (Nequi/Nu)</option>
+                <option value="tarjeta_credito">💳 Tarjeta de Crédito</option>
+                <option value="addi">⚡ Addi / Crédito</option>
               </select>
             </div>
           </div>
 
-          {/* Account Selector when using Liquid Accounts (Debit/Cash/Transfer) */}
-          {paymentMethod !== 'tarjeta_credito' && (
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Afectar Cuenta / Bolsillo
+          {/* Account Selector for Débito / Transferencia */}
+          {(paymentMethod === 'debito' || paymentMethod === 'transferencia') && (
+            <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-1.5 animate-in fade-in duration-150">
+              <label className="block text-xs font-semibold text-slate-300">
+                ¿De qué cuenta bancaria sale la plata?
               </label>
               <select
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
               >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} — {formatCOP(acc.balance)} disponible
-                  </option>
-                ))}
+                {accounts
+                  .filter((acc) => acc.type !== 'efectivo')
+                  .map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} — {formatCOP(acc.balance)} disponible
+                    </option>
+                  ))}
               </select>
+            </div>
+          )}
+
+          {/* Indicator for Efectivo */}
+          {paymentMethod === 'efectivo' && (
+            <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-xs font-semibold text-amber-300 flex items-center justify-between animate-in fade-in duration-150">
+              <span>💵 Se descontará automáticamente de: Efectivo</span>
+              <span className="font-extrabold text-amber-200">
+                {formatCOP(accounts.find((a) => a.type === 'efectivo')?.balance || 0)}
+              </span>
             </div>
           )}
 
           {/* Credit Card Specific Options */}
           {paymentMethod === 'tarjeta_credito' && (
-            <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Seleccionar Tarjeta
-                </label>
-                <select
-                  value={creditCardId}
-                  onChange={(e) => setCreditCardId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
-                >
-                  {creditCards.map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {card.name} (..{card.lastFourDigits})
-                    </option>
-                  ))}
-                </select>
+            <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300 border-b border-slate-800 pb-2">
+                <span>💳 {creditCards[0]?.name || 'Tarjeta de Crédito'}</span>
+                <span className="text-amber-400 font-mono">..{creditCards[0]?.lastFourDigits || '9102'}</span>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">
@@ -445,7 +455,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose })
                   max="36"
                   value={installments}
                   onChange={(e) => setInstallments(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500"
                 />
               </div>
             </div>
