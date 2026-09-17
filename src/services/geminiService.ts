@@ -147,7 +147,7 @@ REGLAS DE RESPUESTA:
     const data = await res.json();
     rawReply = data?.choices?.[0]?.message?.content || 'No obtuve respuesta de ChatGPT.';
   } else {
-    // 2. GOOGLE GEMINI 1.5 Handler
+    // 2. GOOGLE GEMINI Handler with Multi-Model Fallback
     providerUsed = 'gemini';
     const contents = [
       {
@@ -165,30 +165,52 @@ REGLAS DE RESPUESTA:
       },
     ];
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const candidateModels = [
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+    ];
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 800,
-        },
-      }),
-    });
+    let lastErrorMsg = '';
+    let successData: any = null;
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      const msg = errorData?.error?.message || `Error Gemini HTTP ${res.status}`;
-      throw new Error(msg);
+    for (const baseUrl of candidateModels) {
+      try {
+        const endpoint = `${baseUrl}?key=${apiKey}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 800,
+            },
+          }),
+        });
+
+        if (res.ok) {
+          successData = await res.json();
+          break;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastErrorMsg = errData?.error?.message || `HTTP ${res.status}`;
+        }
+      } catch (err: any) {
+        lastErrorMsg = err?.message || 'Error de red';
+      }
     }
 
-    const data = await res.json();
-    rawReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No obtuve respuesta de Gemini.';
+    if (!successData) {
+      throw new Error(lastErrorMsg || 'No se pudo conectar a los modelos de Gemini.');
+    }
+
+    rawReply = successData?.candidates?.[0]?.content?.parts?.[0]?.text || 'No obtuve respuesta de Gemini.';
   }
 
   // Check if response contains an action JSON block
