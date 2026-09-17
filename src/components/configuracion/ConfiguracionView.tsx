@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Download,
@@ -9,10 +9,15 @@ import {
   HardDrive,
   CheckCircle2,
   AlertTriangle,
+  Bot,
+  Sparkles,
+  Key,
+  ExternalLink,
 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatCOP } from '../../utils/formatters';
 import { Modal } from '../ui/Modal';
+import { getGeminiApiKey, saveGeminiApiKey } from '../../services/geminiService';
 
 import { CloudSyncSettings } from './CloudSyncSettings';
 
@@ -28,9 +33,21 @@ export const ConfiguracionView: React.FC = () => {
   } = useFinanceStore();
 
   const [balanceInput, setBalanceInput] = useState(initialBalance.toString());
+  const [apiKeyInput, setApiKeyInput] = useState(getGeminiApiKey());
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    setApiKeyInput(getGeminiApiKey());
+  }, []);
+
+  const handleSaveApiKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveGeminiApiKey(apiKeyInput);
+    setImportStatus('✨ Clave de Inteligencia Artificial (Gemini / ChatGPT) guardada correctamente');
+    setTimeout(() => setImportStatus(null), 3500);
+  };
 
   const handleSaveInitialBalance = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +124,66 @@ export const ConfiguracionView: React.FC = () => {
 
       {/* Cloud Sync in Realtime */}
       <CloudSyncSettings />
+
+      {/* Artificial Intelligence Provider Config */}
+      <div className="glass-card p-6 rounded-3xl space-y-4 border border-purple-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-purple-950/20 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <Bot size={20} />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>Inteligencia Artificial (Gemini Pro / Flash o ChatGPT)</span>
+                <Sparkles size={16} className="text-amber-400 animate-pulse" />
+              </h3>
+              <p className="text-xs text-slate-400">
+                Conecta tu propia API Key gratuita de Google Gemini o tu cuenta de ChatGPT/OpenAI.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold transition-all shrink-0"
+          >
+            <span>Crear Key Gratis (Google AI Studio)</span>
+            <ExternalLink size={12} />
+          </a>
+        </div>
+
+        <form onSubmit={handleSaveApiKey} className="space-y-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Key size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="password"
+                placeholder="Pega tu API Key de Gemini (AIzaSy...) o ChatGPT (sk-...)"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                className="w-full bg-slate-950 border border-purple-500/30 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 transition-all shrink-0 active:scale-95"
+            >
+              Guardar Clave IA
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 pt-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-medium">
+              ✨ <strong>Google Gemini:</strong> Claves que empiezan con <code className="text-purple-300">AIzaSy...</code>
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-medium">
+              🤖 <strong>OpenAI ChatGPT:</strong> Claves que empiezan con <code className="text-blue-300">sk-...</code>
+            </span>
+          </div>
+        </form>
+      </div>
 
       {/* Initial Base Balance Config */}
       <div className="glass-card p-6 rounded-3xl space-y-4 border border-slate-800">
