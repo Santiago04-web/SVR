@@ -78,9 +78,15 @@ class CloudSyncEngine {
         .maybeSingle();
 
       if (error) {
-        // If table doesn't exist yet or permission error
         console.warn('Supabase pull note:', error.message);
-        this.setStatus('error', `Error al consultar: ${error.message}`);
+        if (error.message.includes('does not exist') || error.message.includes('relation') || error.code === '42P01') {
+          this.setStatus('error', '⚠️ Falta presionar "Run" en el SQL Editor de Supabase para crear la tabla.');
+        } else if (error.message.includes('JWT') || error.message.includes('apikey') || error.message.includes('Invalid API key')) {
+          this.setStatus('error', '⚠️ La clave Anon Key no es válida. Revisa que coincida con la de tu panel.');
+        } else {
+          this.setStatus('error', `Error de conexión: ${error.message}`);
+        }
+        return;
       } else if (data && data.state_json) {
         // If remote data exists, apply to store
         try {
@@ -89,7 +95,7 @@ class CloudSyncEngine {
           useFinanceStore.getState().importJSON(JSON.stringify(parsed));
           this.isApplyingRemoteUpdate = false;
           this.lastSyncedHash = JSON.stringify(parsed);
-          this.setStatus('synced', 'Sincronizado en la nube');
+          this.setStatus('synced', '🟢 Sincronizado en vivo');
         } catch (e) {
           console.error('Failed to parse remote financial JSON:', e);
         }
