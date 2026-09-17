@@ -91,9 +91,9 @@ interface FinanceState {
   addVehicleLog: (log: Omit<VehicleLog, 'id'>) => void;
   deleteVehicleLog: (id: string) => void;
 
-  // Scenarios
-  addScenario: (scenario: Omit<Scenario, 'id'>) => void;
-  deleteScenario: (id: string) => void;
+  // Debts Management
+  aboneDebt: (debtId: string, amount: number, accountId?: string, customNote?: string) => void;
+  updateDebt: (debt: Debt) => void;
 
   // Storage & Export/Import
   exportJSON: () => string;
@@ -462,6 +462,59 @@ export const useFinanceStore = create<FinanceState>()(
         ]);
         return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
       },
+
+      // Debts Actions
+      aboneDebt: (debtId, amount, accountId = 'bancolombia', customNote) =>
+        set((state) => {
+          const debt = state.debts.find((d) => d.id === debtId);
+          if (!debt || amount <= 0) return state;
+
+          const newPaid = debt.amountPaid + amount;
+          const newPending = Math.max(0, debt.pendingAmount - amount);
+
+          const updatedDebts = state.debts.map((d) =>
+            d.id === debtId
+              ? {
+                  ...d,
+                  amountPaid: newPaid,
+                  pendingAmount: newPending,
+                  statusText:
+                    newPending === 0
+                      ? '🎉 ¡DEUDA 100% SALDADA!'
+                      : d.statusText,
+                }
+              : d
+          );
+
+          // Register transaction
+          const newTx: Transaction = {
+            id: `tx-abono-${Date.now()}`,
+            description: customNote || `Abono a deuda: ${debt.name}`,
+            amount,
+            type: 'gasto',
+            category: 'Servicios',
+            date: getTodayISO(),
+            paymentMethod: accountId === 'efectivo' ? 'efectivo' : 'debito',
+            accountId,
+            status: 'completado',
+          };
+
+          // Deduct from account
+          const updatedAccounts = state.accounts.map((a) =>
+            a.id === accountId ? { ...a, balance: Math.max(0, a.balance - amount) } : a
+          );
+
+          return {
+            debts: updatedDebts,
+            transactions: [newTx, ...state.transactions],
+            accounts: updatedAccounts,
+          };
+        }),
+
+      updateDebt: (updatedDebt) =>
+        set((state) => ({
+          debts: state.debts.map((d) => (d.id === updatedDebt.id ? updatedDebt : d)),
+        })),
 
       resetToSeedData: () => {
         set({

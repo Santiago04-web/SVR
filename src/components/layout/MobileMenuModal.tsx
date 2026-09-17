@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Bike,
   Settings,
+  Flame,
 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 
@@ -28,7 +29,7 @@ export const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClos
     { id: 'hoy', label: 'Modo "Hoy"', icon: Zap },
     { id: 'decisiones', label: 'Centro de Decisiones', icon: HelpCircle },
     { id: 'movimientos', label: 'Movimientos', icon: ReceiptText },
-    { id: 'tarjetas', label: 'Tarjetas & Créditos', icon: CreditCard },
+    { id: 'tarjetas', label: 'Deudas & Tarjetas', icon: Flame },
     { id: 'presupuesto', label: 'Presupuesto por Categoría', icon: PieChart },
     { id: 'calendario', label: 'Calendario Inteligente', icon: CalendarDays },
     { id: 'objetivos', label: 'Objetivos Financieros', icon: Target },

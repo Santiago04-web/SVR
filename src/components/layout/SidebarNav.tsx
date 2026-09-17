@@ -16,6 +16,7 @@ import {
   EyeOff,
   Bot,
   Sparkles,
+  Flame,
 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 
@@ -31,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'hoy', label: 'Modo "Hoy"', icon: Zap, badge: 'Rápido' },
   { id: 'decisiones', label: 'Decisiones', icon: HelpCircle, badge: 'Smart' },
   { id: 'movimientos', label: 'Movimientos', icon: ReceiptText },
-  { id: 'tarjetas', label: 'Tarjetas', icon: CreditCard },
+  { id: 'tarjetas', label: 'Deudas & Tarjetas', icon: Flame, badge: 'Plan' },
   { id: 'presupuesto', label: 'Presupuesto', icon: PieChart },
   { id: 'calendario', label: 'Calendario', icon: CalendarDays },
   { id: 'objetivos', label: 'Objetivos', icon: Target },
