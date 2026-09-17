@@ -106,16 +106,25 @@ export const SEED_DEBTS: Debt[] = [
     id: 'debt-universidad-semestre',
     name: '🎓 Universidad (Semestre $2.6M)',
     totalCost: 2600000,
-    amountPaid: 850000,
-    pendingAmount: 1750000,
-    firstInstallmentDate: '2026-08-10',
+    amountPaid: 1200000,
+    pendingAmount: 1400000,
+    firstInstallmentDate: '2026-07-10',
     installmentsCount: 6,
-    statusText: 'Matrícula $500k + Agosto $350k pagados. Cuotas de $350k hasta Diciembre',
+    statusText: '10 Jul ($500k bono) + 10 Ago ($350k) + 10 Sep ($350k) PAGADOS ($1.2M). Faltan $1.4M (Oct, Nov, Dic)',
   },
 ];
 
 export const SEED_OBLIGATIONS: Obligation[] = [
   // --- OBLIGACIONES RESTANTES DE SEPTIEMBRE (Del 16 al 30 de Septiembre 2026) ---
+  {
+    id: 'obl-universidad-sep',
+    title: '🎓 Universidad Septiembre',
+    amount: 350000,
+    dueDate: '2026-09-10',
+    category: 'Universidad',
+    isPaid: true,
+    notes: 'Pagada el 10 de Septiembre ($350.000).',
+  },
   {
     id: 'obl-gasolina-sep-w3',
     title: '⛽ Gasolina Moto (Semana 3 Sep)',
@@ -147,15 +156,6 @@ export const SEED_OBLIGATIONS: Obligation[] = [
     dueDate: '2026-09-30',
     category: 'Servicios',
     isPaid: false,
-  },
-  {
-    id: 'obl-universidad-sep',
-    title: '🎓 Universidad Sep',
-    amount: 350000,
-    dueDate: '2026-09-30',
-    category: 'Universidad',
-    isPaid: false,
-    notes: 'Cuota mensual septiembre 2026.',
   },
   {
     id: 'obl-cuota-manejo-sep',

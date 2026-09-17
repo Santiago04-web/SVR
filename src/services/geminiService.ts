@@ -89,7 +89,7 @@ B) DEUDAS TEMPORALES CON FECHA DE FIN (Al pagarlas se libera un gran flujo de ca
   * ¡AL TERMINAR MOTO Y LICENCIA: Tu nómina neta libre pasará de $680.000 a $930.000 quincenales ($1.860.000/mes libres)!
 - Casco Shaft ($505.000 total): Abonaste $126.000 previamente. Saldo pendiente $379.000. Se paga los días 22 de cada mes (primera cuota el 22 de Octubre).
 - Addi ($140.553 total): 3 cuotas a 0% de interés (~$46.851/mes). Primera cuota vence el 4 de Noviembre de 2026.
-- Universidad ($2.600.000 total del semestre): Abonaste $500.000 de matrícula + cuota de Agosto ($350.000) = $850.000 pagados. Quedan $1.750.000 a pagar en cuotas de $350.000 (Sep, Oct, Nov, Dic) para cerrar el semestre en $0.
+- Universidad ($2.600.000 total del semestre): 10 Julio ($500.000 bono matrícula) + 10 Agosto ($350.000) + 10 Septiembre ($350.000) YA ESTÁN PAGADOS ($1.200.000 pagados a hoy). Saldo restante por pagar: $1.400.000 en 4 cuotas de $350.000 (10 Octubre, 10 Noviembre, 10 Diciembre y remanente). ¡En lo que queda de Septiembre NO debes cuota de la U!
 - Trámites Moto obligatorios anuales: SOAT $343.300 (10 Octubre) y Tecnomecánica $235.400 (20 Noviembre).
 
 4. Obligaciones Pendientes (${formatCOP(obligations.filter(o => !o.isPaid).reduce((s,o)=>s+o.amount,0))}):
