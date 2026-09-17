@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   HelpCircle,
   Sparkles,
@@ -8,6 +8,10 @@ import {
   Play,
   Save,
   Trash2,
+  X,
+  Info,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { simulateScenario, ScenarioSimulationResult } from '../../domain/scenarioEngine';
@@ -23,12 +27,16 @@ export const DecisionesView: React.FC = () => {
     obligations,
     creditCards,
     goals,
+    accounts,
+    dineroApartado,
     initialBalance,
     scenarios,
     addScenario,
     deleteScenario,
     addTransaction,
   } = useFinanceStore();
+
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Preset question shortcuts
   const PRESET_QUESTIONS = [
@@ -41,7 +49,7 @@ export const DecisionesView: React.FC = () => {
     },
     {
       title: '¿Puedo comprar un teclado de $200.000?',
-      name: 'Comprar teclado mechanical',
+      name: 'Comprar teclado mecánico',
       amount: 200000,
       category: 'Personal' as Category,
       paymentMethod: 'debito' as PaymentMethod,
@@ -74,6 +82,19 @@ export const DecisionesView: React.FC = () => {
     null
   );
 
+  // Global ESC key listener to dismiss active simulation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (activeSimulation) {
+          setActiveSimulation(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSimulation]);
+
   const handleRunSimulation = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const exp = parseFloat(expenseDelta) || 0;
@@ -96,10 +117,16 @@ export const DecisionesView: React.FC = () => {
       obligations,
       creditCards,
       goals,
-      initialBalance
+      initialBalance,
+      dineroApartado,
+      accounts
     );
 
     setActiveSimulation(result);
+
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
   const handlePresetClick = (q: (typeof PRESET_QUESTIONS)[0]) => {
@@ -127,10 +154,16 @@ export const DecisionesView: React.FC = () => {
       obligations,
       creditCards,
       goals,
-      initialBalance
+      initialBalance,
+      dineroApartado,
+      accounts
     );
 
     setActiveSimulation(result);
+
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
   const handleSaveScenario = () => {
@@ -307,7 +340,7 @@ export const DecisionesView: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all"
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.99]"
             >
               <Play size={16} fill="white" />
               <span>Simular Impacto Financiero</span>
@@ -316,69 +349,99 @@ export const DecisionesView: React.FC = () => {
         </div>
 
         {/* Side-by-Side Comparison Output */}
-        <div className="lg:col-span-7 space-y-4">
+        <div ref={resultsRef} className="lg:col-span-7 space-y-4">
           {activeSimulation ? (
-            <div className="glass-card p-6 rounded-2xl border border-indigo-500/30 space-y-6 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="glass-card p-6 rounded-2xl border border-indigo-500/30 space-y-6 animate-in fade-in duration-200 relative">
+              {/* Header with Title and Dismiss 'X' Button */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-800">
                 <div>
-                  <span className="text-xs uppercase font-extrabold text-indigo-400">
-                    Resultado de Simulación
+                  <span className="text-xs uppercase font-extrabold text-indigo-400 tracking-wider">
+                    Resultado de Simulación (Presiona ESC para cerrar)
                   </span>
-                  <h3 className="text-xl font-black text-white">
+                  <h3 className="text-xl font-black text-white mt-0.5">
                     {activeSimulation.scenario.name}
                   </h3>
                 </div>
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                    activeSimulation.canAfford
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                  }`}
-                >
-                  {activeSimulation.canAfford ? (
-                    <>
-                      <CheckCircle2 size={15} /> Viable
-                    </>
-                  ) : (
-                    <>
-                      <AlertTriangle size={15} /> No Recomendado
-                    </>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                      activeSimulation.verdictType === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        : activeSimulation.verdictType === 'caution'
+                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                    }`}
+                  >
+                    {activeSimulation.verdictType === 'success' ? (
+                      <CheckCircle2 size={15} />
+                    ) : (
+                      <AlertTriangle size={15} />
+                    )}
+                    <span>{activeSimulation.verdictTitle}</span>
+                  </div>
+
+                  {/* Close 'X' Button */}
+                  <button
+                    onClick={() => setActiveSimulation(null)}
+                    title="Cerrar simulación (ESC)"
+                    className="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
               </div>
 
               {/* Recommendation message */}
               <div
-                className={`p-4 rounded-xl text-xs font-medium border ${
-                  activeSimulation.canAfford
+                className={`p-4 rounded-xl text-xs font-medium border leading-relaxed ${
+                  activeSimulation.verdictType === 'success'
                     ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                    : activeSimulation.verdictType === 'caution'
+                    ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
                     : 'bg-rose-950/20 border-rose-500/30 text-rose-200'
                 }`}
               >
                 {activeSimulation.recommendation}
               </div>
 
+              {/* Detailed Reasoning Bullets if present */}
+              {activeSimulation.details?.reasoningBullets?.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <Info size={14} className="text-indigo-400" />
+                    <span>Análisis Financiero Detallado</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                    {activeSimulation.details.reasoningBullets.map((bullet, bIdx) => (
+                      <li key={bIdx} className="leading-snug">
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Comparison Matrix */}
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-4 pt-1">
                 {/* BEFORE */}
                 <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <span className="text-xs uppercase font-bold text-slate-400 block border-b border-slate-800 pb-2">
                     SITUACIÓN ACTUAL
                   </span>
                   <div>
-                    <span className="text-[11px] text-slate-400">Saldo Disponible</span>
+                    <span className="text-[11px] text-slate-400">Saldo Disponible (Cuentas)</span>
                     <div className="text-base font-bold text-white">
                       {formatCOP(activeSimulation.currentSummary.saldoDisponible)}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400">Comprometido</span>
+                    <span className="text-[11px] text-slate-400">Obligaciones Pendientes Mes</span>
                     <div className="text-base font-bold text-amber-400">
-                      {formatCOP(activeSimulation.currentSummary.comprometido)}
+                      {formatCOP(activeSimulation.details?.pendingObligationsThisMonth || 0)}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400">Realmente Libre</span>
+                    <span className="text-[11px] text-slate-400">Colchón Libre</span>
                     <div className="text-lg font-black text-emerald-400">
                       {formatCOP(activeSimulation.currentSummary.realmenteLibre)}
                     </div>
@@ -397,28 +460,34 @@ export const DecisionesView: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400">Comprometido</span>
+                    <span className="text-[11px] text-slate-400">Obligaciones Pendientes Mes</span>
                     <div className="text-base font-bold text-amber-400">
-                      {formatCOP(activeSimulation.simulatedSummary.comprometido)}
+                      {formatCOP(activeSimulation.details?.pendingObligationsThisMonth || 0)}
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400">Realmente Libre</span>
+                    <span className="text-[11px] text-slate-400">Colchón Libre Proyectado</span>
                     <div
                       className={`text-lg font-black ${
-                        activeSimulation.simulatedSummary.realmenteLibre >= 0
+                        activeSimulation.details?.cashBufferAfterExpense >= 0
                           ? 'text-emerald-400'
                           : 'text-rose-400'
                       }`}
                     >
-                      {formatCOP(activeSimulation.simulatedSummary.realmenteLibre)}
+                      {formatCOP(activeSimulation.details?.cashBufferAfterExpense ?? activeSimulation.simulatedSummary.realmenteLibre)}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  onClick={() => setActiveSimulation(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-colors"
+                >
+                  Cerrar Simulación (ESC)
+                </button>
                 <button
                   onClick={handleSaveScenario}
                   className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 transition-colors"
@@ -481,3 +550,4 @@ export const DecisionesView: React.FC = () => {
     </div>
   );
 };
+

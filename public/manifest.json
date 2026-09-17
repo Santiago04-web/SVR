@@ -1,12 +1,17 @@
 {
   "short_name": "SVR Finanzas",
-  "name": "SVR Finanzas - Control Inteligente",
+  "name": "SVR Finanzas",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/logo.png?v=3",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png?v=3",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
   "start_url": "/",

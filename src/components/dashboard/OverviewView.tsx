@@ -240,26 +240,32 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onOpenQuickAdd, onOp
       </div>
 
       {/* Proyección (Totalmente Separada del Saldo Real) */}
-      <div className="glass-card p-6 rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
+      <div className="glass-card p-6 rounded-2xl border border-indigo-500/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
               <TrendingUp size={20} className="text-indigo-400" />
-              PROYECCIÓN FUTURA (ESTIMACIÓN)
+              PROYECCIÓN DE CRECIMIENTO (SIMULACIÓN)
             </h3>
             <p className="text-xs text-slate-400">
-              Proyección basada en estimación conservadora de Uber (4 días/sem × $50k) y Nómina quincenal real. NO reflejada como saldo actual.
+              Basada en Nómina ($1.360.000/mes) + Uber estimado - Obligaciones reales.
             </p>
           </div>
+          <button
+            onClick={() => setActiveView('proyecciones')}
+            className="px-3.5 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-all self-start sm:self-auto"
+          >
+            Ver Proyección Completa →
+          </button>
         </div>
 
-        <div className="h-48 w-full">
+        <div className="h-52 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#818cf8" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#818cf8" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -274,7 +280,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onOpenQuickAdd, onOp
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(val) => `$${val / 1000}k`}
+                tickFormatter={(val) => `$${Math.round(val / 1000)}k`}
               />
               <RechartsTooltip
                 contentStyle={{
@@ -284,13 +290,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onOpenQuickAdd, onOp
                   fontSize: '12px',
                   color: '#fff',
                 }}
-                formatter={(value: any) => [formatCOP(Number(value)), 'Estimación Proyectada']}
+                formatter={(value: any) => [formatCOP(Number(value), false, isPrivacyMode), 'Saldo Proyectado']}
               />
               <Area
                 type="monotone"
-                dataKey="Proyecciones"
-                stroke="#6366f1"
-                strokeWidth={2}
+                dataKey="Proyeccion"
+                stroke="#818cf8"
+                strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#projGrad)"
               />
