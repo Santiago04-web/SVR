@@ -218,7 +218,17 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
         setIsLoading(false);
         return;
       } catch (err: any) {
-        console.warn('Gemini request failed, falling back to local engine:', err);
+        console.error('AI request failed:', err);
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: `⚠️ **Error de Conexión con la IA:**\n\n${err?.message || 'La clave ingresada no fue aceptada por Google Gemini.'}\n\n💡 *Recuerda que la clave de API gratuita de Google Gemini debe comenzar por \`AIzaSy...\` (creada en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)) o de ChatGPT (\`sk-...\`). Toca el ícono de la llave 🔑 arriba para actualizarla.*`,
+            isGemini: false,
+          },
+        ]);
+        setIsLoading(false);
+        return;
       }
     }
 
