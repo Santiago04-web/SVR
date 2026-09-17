@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CreditCard as CardIcon,
   Plus,
@@ -14,6 +14,7 @@ import {
   Wallet,
   Clock,
   Zap,
+  RefreshCw,
 } from 'lucide-react';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { calculateCardCycleInfo } from '../../domain/creditCardEngine';
@@ -31,9 +32,17 @@ export const TarjetasView: React.FC = () => {
     addCreditCard,
     deleteCreditCard,
     aboneDebt,
+    syncDebts,
   } = useFinanceStore();
 
   const [activeTab, setActiveTab] = useState<'deudas' | 'tarjetas'>('deudas');
+
+  // Auto-sync debts if not all 5 are loaded
+  useEffect(() => {
+    if (!debts || debts.length < 5) {
+      syncDebts();
+    }
+  }, [debts, syncDebts]);
 
   // Add Card State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -129,6 +138,15 @@ export const TarjetasView: React.FC = () => {
           >
             <CardIcon size={15} />
             <span>Tarjetas de Crédito ({creditCards.length})</span>
+          </button>
+
+          <button
+            onClick={() => syncDebts()}
+            title="Recargar las 5 deudas con sus datos oficiales"
+            className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 transition-all text-xs flex items-center gap-1"
+          >
+            <RefreshCw size={14} />
+            <span className="hidden md:inline">Sincronizar</span>
           </button>
         </div>
       </div>

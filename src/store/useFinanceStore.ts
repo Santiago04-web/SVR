@@ -94,6 +94,7 @@ interface FinanceState {
   // Debts Management
   aboneDebt: (debtId: string, amount: number, accountId?: string, customNote?: string) => void;
   updateDebt: (debt: Debt) => void;
+  syncDebts: () => void;
 
   // Scenarios
   addScenario: (scenario: Omit<Scenario, 'id'>) => void;
@@ -520,6 +521,17 @@ export const useFinanceStore = create<FinanceState>()(
           debts: state.debts.map((d) => (d.id === updatedDebt.id ? updatedDebt : d)),
         })),
 
+      syncDebts: () => {
+        set((state) => {
+          const currentIds = new Set((state.debts || []).map((d) => d.id));
+          const missing = SEED_DEBTS.filter((d) => !currentIds.has(d.id));
+          if (missing.length > 0) {
+            return { debts: [...state.debts, ...missing] };
+          }
+          return { debts: SEED_DEBTS };
+        });
+      },
+
       resetToSeedData: () => {
         set({
           initialBalance: INITIAL_BASE_BALANCE,
@@ -599,9 +611,24 @@ export const useFinanceStore = create<FinanceState>()(
       })),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Ensure new structured debts exist in state if missing or outdated
-          if (!state.debts || state.debts.length < SEED_DEBTS.length) {
-            state.debts = SEED_DEBTS;
+          // Ensure all 5 structured debts exist in state if missing or outdated
+          const existingDebtIds = new Set((state.debts || []).map((d: any) => d.id));
+          const hasAll5Debts = SEED_DEBTS.every((d) => existingDebtIds.has(d.id));
+
+          if (!state.debts || state.debts.length < SEED_DEBTS.length || !hasAll5Debts) {
+            // Merge existing user abonos with complete SEED_DEBTS
+            const merged = SEED_DEBTS.map((seedDebt) => {
+              const found = (state.debts || []).find((d: any) => d.id === seedDebt.id);
+              return found || seedDebt;
+            });
+            state.debts = merged;
+          }
+
+          // Mark obl-universidad-sep as paid
+          if (state.obligations) {
+            state.obligations = state.obligations.map((o: any) =>
+              o.id === 'obl-universidad-sep' ? { ...o, isPaid: true } : o
+            );
           }
         }
       },
