@@ -460,13 +460,47 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ isOpen, onCl
               }`}
             >
               <div
-                className={`p-3.5 sm:p-4 rounded-2xl leading-relaxed whitespace-pre-line ${
+                className={`p-3.5 sm:p-4 rounded-2xl leading-relaxed ${
                   m.sender === 'user'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-600/20 rounded-br-none'
-                    : 'bg-slate-900/90 border border-purple-500/20 text-slate-100 rounded-bl-none shadow-sm'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-600/20 rounded-br-none whitespace-pre-line'
+                    : 'bg-slate-900/90 border border-purple-500/20 text-slate-100 rounded-bl-none shadow-sm space-y-2'
                 }`}
               >
-                {m.text}
+                {m.sender === 'user' ? (
+                  m.text
+                ) : (
+                  <div className="space-y-1.5 leading-relaxed">
+                    {m.text.split('\n').map((line, lIdx) => {
+                      const trimmed = line.trim();
+                      if (!trimmed) return <div key={lIdx} className="h-1" />;
+
+                      // Render bullet points cleanly
+                      const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('* ');
+                      const cleanLine = isBullet ? trimmed.replace(/^[•\-\*]\s*/, '') : trimmed;
+
+                      // Parse **bold** markers
+                      const parts = cleanLine.split(/(\*\*.*?\*\*)/g);
+
+                      return (
+                        <div key={lIdx} className={isBullet ? 'flex items-start gap-2 pl-1' : ''}>
+                          {isBullet && <span className="text-purple-400 font-bold shrink-0">•</span>}
+                          <span className="flex-1">
+                            {parts.map((p, pIdx) => {
+                              if (p.startsWith('**') && p.endsWith('**')) {
+                                return (
+                                  <strong key={pIdx} className="font-extrabold text-white">
+                                    {p.slice(2, -2)}
+                                  </strong>
+                                );
+                              }
+                              return <React.Fragment key={pIdx}>{p}</React.Fragment>;
+                            })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {m.actionExecuted && (

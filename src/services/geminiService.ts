@@ -87,7 +87,9 @@ ${debtsInfo}
 - Moto: Pulsar 135 LS (SOAT $343.300 vence 10 Oct, Tecnomecánica $235.400 vence 20 Nov).
 
 REGLAS DE RESPUESTA:
-- Responde con razonamiento financiero agudo, usando SIEMPRE los números y saldos reales de arriba.
+- Responde de forma limpia, directa y conversacional como un asesor humano colombiano experto.
+- IMPORTANTE: NO abuses de los asteriscos ni del markdown. Evita poner ** en cada palabra o frase. Usa texto plano limpio y fluido.
+- Usa SIEMPRE los números y saldos reales de arriba para tus cálculos.
 - Si el usuario te pregunta si puede gastar o endeudarse, calcula el impacto en su flujo de caja quincenal y sus pagos fijos obligatorios (Universidad, Mercado, Almuerzos).
 - Si el usuario te pide registrar un movimiento (ej: "me tomé un café de 5k en efectivo", "gané 80 mil en uber", "pagué 15k de gasolina"), genera la respuesta explicativa y al final un bloque JSON con la acción estructurada para que la app lo ejecute automáticamente:
 
@@ -109,7 +111,7 @@ REGLAS DE RESPUESTA:
 - Métodos de pago válidos: 'efectivo', 'debito', 'transferencia', 'tarjeta_credito', 'addi'.
 - Categorías válidas: 'Comida', 'Transporte', 'Personal', 'Moto', 'Servicios', 'Tarjeta', 'Universidad', 'Gym', 'Ahorro', 'Otros'.
 - Cuentas válidas: 'bancolombia', 'efectivo', 'nequi', 'nu'.
-- Si solo son preguntas de asesoría o análisis, responde de forma concisa con viñetas claras y NO incluyas bloque JSON.`;
+- Si solo son preguntas de asesoría o análisis, responde de forma concisa y NO incluyas bloque JSON.`;
 
   let rawReply = '';
   let providerUsed: 'gemini' | 'openai' = 'gemini';
