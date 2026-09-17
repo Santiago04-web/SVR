@@ -241,13 +241,24 @@ export const useFinanceStore = create<FinanceState>()(
             id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
           };
 
+          const delta = newT.type === 'ingreso' ? newT.amount : -newT.amount;
+
           const updatedAccounts = state.accounts.map((a) => {
-            if (
-              (a.type === 'efectivo' && newT.paymentMethod === 'efectivo') ||
-              (a.isMain && newT.paymentMethod === 'debito')
-            ) {
-              const delta = newT.type === 'ingreso' ? newT.amount : -newT.amount;
+            // Match explicitly by accountId if supplied
+            if (newT.accountId && a.id === newT.accountId) {
               return { ...a, balance: Math.max(0, a.balance + delta) };
+            }
+            // Otherwise match by payment method or account type
+            if (!newT.accountId) {
+              if (a.type === 'efectivo' && newT.paymentMethod === 'efectivo') {
+                return { ...a, balance: Math.max(0, a.balance + delta) };
+              }
+              if (a.id === 'nequi' && newT.paymentMethod === 'transferencia') {
+                return { ...a, balance: Math.max(0, a.balance + delta) };
+              }
+              if (a.isMain && (newT.paymentMethod === 'debito' || newT.paymentMethod === 'transferencia')) {
+                return { ...a, balance: Math.max(0, a.balance + delta) };
+              }
             }
             return a;
           });
@@ -267,9 +278,37 @@ export const useFinanceStore = create<FinanceState>()(
         })),
 
       deleteTransaction: (id) =>
-        set((state) => ({
-          transactions: state.transactions.filter((t) => t.id !== id),
-        })),
+        set((state) => {
+          const txToDelete = state.transactions.find((t) => t.id === id);
+          let updatedAccounts = state.accounts;
+
+          if (txToDelete && txToDelete.status === 'completado') {
+            // Reverse the effect on the account
+            const reverseDelta = txToDelete.type === 'ingreso' ? -txToDelete.amount : txToDelete.amount;
+            updatedAccounts = state.accounts.map((a) => {
+              if (txToDelete.accountId && a.id === txToDelete.accountId) {
+                return { ...a, balance: Math.max(0, a.balance + reverseDelta) };
+              }
+              if (!txToDelete.accountId) {
+                if (a.type === 'efectivo' && txToDelete.paymentMethod === 'efectivo') {
+                  return { ...a, balance: Math.max(0, a.balance + reverseDelta) };
+                }
+                if (a.isMain && (txToDelete.paymentMethod === 'debito' || txToDelete.paymentMethod === 'transferencia')) {
+                  return { ...a, balance: Math.max(0, a.balance + reverseDelta) };
+                }
+              }
+              return a;
+            });
+          }
+
+          const mainAcc = updatedAccounts.find((a) => a.isMain);
+
+          return {
+            transactions: state.transactions.filter((t) => t.id !== id),
+            accounts: updatedAccounts,
+            initialBalance: mainAcc ? mainAcc.balance : state.initialBalance,
+          };
+        }),
 
       // Obligations
       addObligation: (newO) =>
@@ -369,7 +408,7 @@ export const useFinanceStore = create<FinanceState>()(
           debts: state.debts,
           plannedPurchases: state.plannedPurchases,
           exportDate: new Date().toISOString(),
-          version: 'v9',
+          version: 'v10',
         };
         return JSON.stringify(exportData, null, 2);
       },
@@ -459,8 +498,49 @@ export const useFinanceStore = create<FinanceState>()(
       },
     }),
     {
-      name: 'app-gastos-finance-store-v13',
-      storage: createJSONStorage(() => localStorage),
+      name: 'svr-finanzas-storage-main',
+      storage: createJSONStorage(() => ({
+        getItem: (name: string) => {
+          const mainData = localStorage.getItem(name);
+          if (mainData) return mainData;
+
+          // Automatic fallback migration to recover any past transactions from previous keys
+          const legacyKeys = [
+            'app-gastos-finance-store-v13',
+            'app-gastos-finance-store-v12',
+            'app-gastos-finance-store-v11',
+            'app-gastos-finance-store-v10',
+            'app-gastos-finance-store-v9',
+            'app-gastos-finance-store-v8',
+            'app-gastos-finance-store-v7',
+          ];
+
+          for (const key of legacyKeys) {
+            const legacyData = localStorage.getItem(key);
+            if (legacyData) {
+              try {
+                const parsed = JSON.parse(legacyData);
+                if (parsed?.state?.transactions?.length > 0 || parsed?.state?.accounts?.length > 0) {
+                  localStorage.setItem(name, legacyData);
+                  return legacyData;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+          return null;
+        },
+        setItem: (name: string, value: string) => {
+          localStorage.setItem(name, value);
+          // Also keep in v13 for backward safety
+          localStorage.setItem('app-gastos-finance-store-v13', value);
+        },
+        removeItem: (name: string) => {
+          localStorage.removeItem(name);
+        },
+      })),
     }
   )
 );
+

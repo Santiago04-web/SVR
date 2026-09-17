@@ -32,6 +32,7 @@ export interface Transaction {
   category: Category;
   date: string; // YYYY-MM-DD
   paymentMethod: PaymentMethod;
+  accountId?: string;
   isRecurring?: boolean;
   recurringFrequency?: 'mensual' | 'quincenal' | 'anual';
   creditCardId?: string;

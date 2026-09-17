@@ -13,13 +13,14 @@ interface QuickAddModalProps {
 }
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose }) => {
-  const { addTransaction, creditCards } = useFinanceStore();
+  const { addTransaction, creditCards, accounts } = useFinanceStore();
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('gasto');
   const [category, setCategory] = useState<Category>('Comida');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('debito');
+  const [accountId, setAccountId] = useState(accounts[0]?.id || 'bancolombia');
   const [creditCardId, setCreditCardId] = useState(creditCards[0]?.id || '');
   const [installments, setInstallments] = useState('1');
   const [date, setDate] = useState(getTodayISO());
@@ -153,6 +154,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose })
       category,
       date,
       paymentMethod,
+      accountId: paymentMethod !== 'tarjeta_credito' ? accountId : undefined,
       creditCardId: paymentMethod === 'tarjeta_credito' ? creditCardId : undefined,
       installments:
         paymentMethod === 'tarjeta_credito' && parseInt(installments) > 1
@@ -387,12 +389,32 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose })
               >
                 <option value="debito">Débito / Cuenta</option>
                 <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
                 <option value="tarjeta_credito">Tarjeta de Crédito</option>
                 <option value="addi">Addi / Crédito</option>
-                <option value="transferencia">Transferencia</option>
               </select>
             </div>
           </div>
+
+          {/* Account Selector when using Liquid Accounts (Debit/Cash/Transfer) */}
+          {paymentMethod !== 'tarjeta_credito' && (
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">
+                Afectar Cuenta / Bolsillo
+              </label>
+              <select
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              >
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} — {formatCOP(acc.balance)} disponible
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Credit Card Specific Options */}
           {paymentMethod === 'tarjeta_credito' && (
