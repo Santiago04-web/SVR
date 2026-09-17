@@ -84,10 +84,12 @@ A) GASTOS DE VIDA / OPERATIVOS RECURRENTES (Vivir el día a día):
 - Universidad ($350.000/mes hasta culminar carrera).
 
 B) DEUDAS TEMPORALES CON FECHA DE FIN (Al pagarlas se libera un gran flujo de caja):
-- Descuento de Licencia: $150.000/quincena ($300.000/mes). Cuando se termine de pagar, tu nómina neta subirá a $830k quincenales.
-- Descuento de Moto: $100.000/quincena ($200.000/mes). Cuando se termine, sumado a la licencia, tu nómina neta libre será de $930.000 quincenales ($1.860.000/mes libres).
-- Addi: Total $140.553 en 3 cuotas (~$46.851/mes).
-- Casco Shaft: $379.000 (1ª cuota en Noviembre).
+- Moto ($2.000.000 total): Se pagan $100.000 por quincena desde el 15 de Mayo de 2026. Llevas 9 quincenas pagadas ($900.000), quedan 11 quincenas ($1.100.000) por terminar.
+- Licencia de Conducción ($1.450.000 total): Se pagan $150.000 por quincena desde el 15 de Septiembre de 2026. Llevas 1 quincena pagada ($150.000), quedan $1.300.000 pendientes.
+  * ¡AL TERMINAR MOTO Y LICENCIA: Tu nómina neta libre pasará de $680.000 a $930.000 quincenales ($1.860.000/mes libres)!
+- Casco Shaft ($505.000 total): Abonaste $126.000 previamente. Saldo pendiente $379.000. Se paga los días 22 de cada mes (primera cuota el 22 de Octubre).
+- Addi ($140.553 total): 3 cuotas a 0% de interés (~$46.851/mes). Primera cuota vence el 4 de Noviembre de 2026.
+- Universidad ($2.600.000 total del semestre): Abonaste $500.000 de matrícula + cuota de Agosto ($350.000) = $850.000 pagados. Quedan $1.750.000 a pagar en cuotas de $350.000 (Sep, Oct, Nov, Dic) para cerrar el semestre en $0.
 - Trámites Moto obligatorios anuales: SOAT $343.300 (10 Octubre) y Tecnomecánica $235.400 (20 Noviembre).
 
 4. Obligaciones Pendientes (${formatCOP(obligations.filter(o => !o.isPaid).reduce((s,o)=>s+o.amount,0))}):
