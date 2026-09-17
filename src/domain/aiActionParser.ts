@@ -167,87 +167,152 @@ export function generateIntelligentAiReply(
   creditCards: CreditCard[],
   debts: Debt[]
 ): string {
-  const qLower = query.toLowerCase().trim();
+  // Normalize string and handle common typos / Colombian slang
+  const clean = query
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 
-  // Addi / Créditos
-  if (qLower.includes('addi') || qLower.includes('credito') || qLower.includes('deuda')) {
+  const card = creditCards[0] || {
+    name: 'Bancolombia Visa Clásica',
+    totalLimit: 2400000,
+    lastFourDigits: '9102',
+    cutoffDay: 30,
+    paymentDueDay: 15,
+    monthlyFee: 20900,
+  };
+
+  const pendingObligationsThisMonth = obligations
+    .filter((o) => !o.isPaid)
+    .reduce((sum, o) => sum + o.amount, 0);
+
+  // 1. TARJETA DE CRÉDITO & CUPO / MÁXIMO PARA GASTAR CON TARJETA
+  const isCardQuery =
+    (clean.includes('tarjeta') || clean.includes('credito') || clean.includes('crdito') || clean.includes('visa') || clean.includes('tc') || clean.includes('cupo')) &&
+    !clean.includes('addi');
+
+  if (isCardQuery) {
+    if (
+      clean.includes('maximo') ||
+      clean.includes('cuanto puedo') ||
+      clean.includes('limite') ||
+      clean.includes('gastar') ||
+      clean.includes('comprar') ||
+      clean.includes('capacidad')
+    ) {
+      return `💳 **Análisis de Capacidad con tu Tarjeta de Crédito (${card.name}):**
+
+• **Cupo total bancario:** ${formatCOP(card.totalLimit)} (Disponible al 100%).
+• **Tope prudente recomendado (Sin ahogarte):** Máximo **$450.000** diferido a 3 o 4 cuotas.
+• **¿Por qué este tope?:** Tu sueldo neto quincenal es de $680.000 ($1.360.000/mes). Con tus obligaciones fijas actuales (~${formatCOP(pendingObligationsThisMonth)} en Universidad, Mercado y Moto), una cuota de tarjeta superior a **$150.000/mes** te dejaría sin margen libre para imprevistos.
+
+💡 **Estrategia SVR:**
+1. Si compras algo menor a **$100.000** (mecatos, ropa rápida, gasolina): Paga a **1 cuota** (0% intereses) y págalo todo el día 15.
+2. Si compras algo grande (**Perfume, Gafas, etc.**): Diferir a 3 cuotas máximo para que la cuota quede en ~$100k-$150k/mes.`;
+    }
+
+    return `💳 **Estado de tu Tarjeta de Crédito:**
+• **Tarjeta:** ${card.name} (..${card.lastFourDigits || '9102'})
+• **Cupo disponible:** ${formatCOP(card.totalLimit)}
+• **Fecha de Corte:** Día ${card.cutoffDay} de cada mes
+• **Fecha Límite de Pago:** Día ${card.paymentDueDay} del mes siguiente
+• **Cuota de Manejo:** ${formatCOP(card.monthlyFee || 20900)}/mes`;
+  }
+
+  // 2. ADDI / CRÉDITO ADDI ESPECÍFICO
+  if (clean.includes('addi')) {
     const addiDebt = debts.find((d) => d.name.toLowerCase().includes('addi'));
     const totalPending = addiDebt ? addiDebt.pendingAmount : 140553;
-    return `⚡ **Crédito Addi:** Tienes una deuda de **${formatCOP(
-      totalPending
-    )}** en 3 cuotas (~$46.851/mes). La 1ª cuota vence el **4 de Noviembre de 2026**. Tu saldo libre actual es **${formatCOP(
-      summary.realmenteLibre
-    )}**. Si decides pagar anticipado, liberarás $46.851/mes de tu presupuesto futuro.`;
+
+    if (clean.includes('adelantad') || clean.includes('pagar') || clean.includes('prepago') || clean.includes('abono')) {
+      return `⚡ **Estrategia sobre Deuda Addi (${formatCOP(totalPending)}):**
+• **Costo financiero:** 0% de interés (Crédito a 3 cuotas de ~$46.851/mes).
+• **Vencimiento 1ª cuota:** 4 de Noviembre de 2026.
+• **Recomendación:** **NO es necesario prepagarlo hoy.** Conserva tu liquidez actual (${formatCOP(summary.saldoDisponible)}) para tus pagos de septiembre (Universidad $350k, Mercado $250k). Pagar Addi por adelantado no te ahorra intereses y te descapitaliza antes de quincena.`;
+    }
+
+    return `⚡ **Crédito Addi:** Tienes una deuda activa de **${formatCOP(totalPending)}** en 3 cuotas (~$46.851/mes). La 1ª cuota vence el **4 de Noviembre de 2026**.`;
   }
 
-  // Moto / Pulsar / SOAT / Tecno
+  // 3. MOTO, PULSAR, SOAT, TECNOMECÁNICA, CASCO
   if (
-    qLower.includes('moto') ||
-    qLower.includes('soat') ||
-    qLower.includes('tecno') ||
-    qLower.includes('pulsar') ||
-    qLower.includes('casco')
+    clean.includes('moto') ||
+    clean.includes('soat') ||
+    clean.includes('tecno') ||
+    clean.includes('pulsar') ||
+    clean.includes('casco') ||
+    clean.includes('aceite')
   ) {
     const cascoDebt = debts.find((d) => d.name.toLowerCase().includes('casco'));
-    return `🏍️ **Estado Moto Pulsar 135 LS (2019):**\n• **SOAT:** Vence el 10 OCT 2026 (valor pendiente de confirmación).\n• **Tecnomecánica:** Vence el 20 NOV 2026.\n• **Casco Shaft:** ${
-      cascoDebt ? formatCOP(cascoDebt.pendingAmount) : '$379.000'
-    } pendiente (1ª cuota en NOV).\n• **Descuentos de nómina:** La moto ($100k/quincena) y licencia ($150k/quincena) ya te los descuentan directamente antes de recibir tu pago neto de $680.000.`;
+    return `🏍️ **Módulo Moto Pulsar 135 LS (2019):**
+• **SOAT:** Vence el **10 de Octubre** (${formatCOP(343300)} tarifa diferencial).
+• **Tecnomecánica:** Vence el **20 de Noviembre** (${formatCOP(235400)}).
+• **Casco Shaft:** ${cascoDebt ? formatCOP(cascoDebt.pendingAmount) : '$379.000'} pendiente (1ª cuota en NOV).
+• **Nómina:** La cuota de moto ($100k) y licencia ($150k) ya vienen descontadas de tu nómina neta de $680.000 quincenales.`;
   }
 
-  // Saldo / Cuánto puedo gastar / Bancolombia
+  // 4. UBER / DIDI / INGRESOS EXTRA
+  if (clean.includes('uber') || clean.includes('didi') || clean.includes('jornada') || clean.includes('extra')) {
+    return `🚗 **Uber / Ingresos Extra:**
+• **Meta estándar:** $50.000 netos por jornada (4 días/sem = ~$200.000/semana).
+• **Registro por voz/texto:** Solo escribe: *"gané 70k en uber y gasté 15k de gasolina"* y lo registraré automáticamente en tu bolsillo de Efectivo.`;
+  }
+
+  // 5. SALDO / CUÁNTO ME QUEDA / LÍMITE DIARIO / LIQUIDEZ
   if (
-    qLower.includes('saldo') ||
-    qLower.includes('libre') ||
-    qLower.includes('cuanto me queda') ||
-    qLower.includes('puedo gastar') ||
-    qLower.includes('bancolombia')
+    clean.includes('saldo') ||
+    clean.includes('libre') ||
+    clean.includes('cuanto me queda') ||
+    clean.includes('cuanto tengo') ||
+    clean.includes('plata') ||
+    clean.includes('efectivo') ||
+    clean.includes('bancolombia') ||
+    clean.includes('nequi') ||
+    clean.includes('nu')
   ) {
-    return `💰 **Resumen de Liquidez Real:**\n• **Saldo en Bancolombia:** ${formatCOP(
-      summary.saldoDisponible
-    )}\n• **Dinero Apartado:** ${formatCOP(summary.dineroApartado)}\n• **Realmente Libre:** ${formatCOP(
-      summary.realmenteLibre
-    )}\n• **Límite diario recomendado:** ${formatCOP(
-      summary.puedesGastarHoy
-    )}/día hasta tu próxima quincena.`;
+    return `💰 **Resumen de Liquidez Real (SVR Finanzas):**
+• **Saldo Total en Cuentas:** ${formatCOP(summary.saldoDisponible)}
+• **Dinero Apartado / Reservas:** ${formatCOP(summary.dineroApartado)}
+• **Realmente Libre Hoy:** ${formatCOP(summary.realmenteLibre)}
+• **Tope Diario para Mecatos:** ${formatCOP(summary.puedesGastarHoy)}/día (para proteger tus pagos fijos).`;
   }
 
-  // Uber
-  if (qLower.includes('uber') || qLower.includes('ganancia') || qLower.includes('jornada')) {
-    return `🚗 **Uber e Ingresos Extra:** Tu promedio estimado es de **$50.000 netos/jornada** (4 días/semana = ~$200.000/semana). Puedes dictarme tus jornadas directamente diciendo: *"gané 70k en uber y gasté 15k de gasolina"* y lo registraré automáticamente.`;
+  // 6. UNIVERSIDAD
+  if (clean.includes('universidad') || clean.includes('estudio') || clean.includes('semestre')) {
+    return `🎓 **Universidad:**
+• Cuota mensual: **$350.000**.
+• Vencimientos programados: 30 Sep, 10 Oct, 10 Nov y 10 Dic (Última cuota del semestre).`;
   }
 
-  // Universidad
-  if (qLower.includes('universidad') || qLower.includes('u') || qLower.includes('estudio')) {
-    return `🎓 **Universidad:** La cuota mensual es de **$350.000** con vencimiento el día 30 de cada mes. No afecta tu saldo actual de $507.000 hasta que la pagues o apartes el dinero.`;
+  // 7. COMPRAS PLANEADAS / CONSEJO DE COMPRA GENERAL
+  if (clean.includes('comprar') || clean.includes('teclado') || clean.includes('gafas') || clean.includes('perfume') || clean.includes('jean')) {
+    return `🛍️ **Evaluación de Compras Planeadas:**
+• **Prioridad 1 (Necesidad Médica):** 👓 Gafas formuladas ($500.000). Se recomienda pagarlas con nómina + ahorro.
+• **Prioridad 4 (Deseos Personales):** Teclado ($200k), Perfume ($300k-$450k), Jeans ($150k c/u).
+• **Consejo:** Puedes ir al **Centro de Decisiones** en el menú para simular en tiempo real cómo afectaría cada compra a tu cupo diario.`;
   }
 
-  // Tarjeta de crédito
-  if (qLower.includes('tarjeta') || qLower.includes('visa') || qLower.includes('cuota de manejo')) {
-    const card = creditCards[0];
-    return `💳 **Bancolombia Visa Clásica:**\n• Cupo total: ${formatCOP(
-      card?.totalLimit || 2400000
-    )}\n• Deuda actual: $0 (Sin compras a crédito pendientes)\n• Corte: Día 30 | Vencimiento: Día 15\n• Cuota de manejo: $20.900/mes (vence el 30 Sep).`;
+  // 8. CIERRE DE MES / QUINCENA / NÓMINA
+  if (clean.includes('quincena') || clean.includes('nomina') || clean.includes('cierre') || clean.includes('sueldo')) {
+    return `🗓️ **Flujo Quincenal:**
+• Tu nómina neta es de **$680.000** los días 15 y 30 de cada mes ($1.360.000/mes).
+• Próximos compromisos fuertes del 30 Sep: Universidad ($350k), Mercado ($250k) y Almuerzos ($200k).`;
   }
 
-  // Septiembre / Cierre de mes / Quincena
-  if (
-    qLower.includes('septiembre') ||
-    qLower.includes('cierre') ||
-    qLower.includes('quincena') ||
-    qLower.includes('nomina')
-  ) {
-    return `🗓️ **Cierre de Septiembre:**\n• Recibes **$680.000** netos el 30 Sep.\n• Obligaciones pendientes de fin de mes: Almuerzos ($200k), Mercado grande ($250k), Movistar ($35k), Universidad ($350k) y Cuota de manejo ($20.900).\n• Con tu nómina y jornadas de Uber mantienes un margen positivo holgado.`;
+  // 9. SALUDO / INSTRUCCIONES
+  if (clean.includes('hola') || clean.includes('ayuda') || clean.includes('que puedes hacer') || clean.includes('comandos')) {
+    return `🤖 **¡Hola! Soy tu Asistente Financiero Antigravity.**
+
+Puedes consultarme cosas como:
+• *"¿Cuánto es lo máximo que puedo gastar con la tarjeta de crédito?"*
+• *"¿Me conviene pagar Addi por adelantado?"*
+• *"¿Cuánto me queda libre hoy?"*
+• O darme órdenes directas como: *"gané 60k en uber"* o *"pagué 20k de gasolina"*.`;
   }
 
-  // Saludo / Ayuda
-  if (qLower.includes('hola') || qLower.includes('quien eres') || qLower.includes('ayuda')) {
-    return `🤖 **¡Hola! Soy tu Asistente Financiero Antigravity (Local y 100% Privado).**\n\nPuedo responder cualquier duda de tu presupuesto o **ejecutar órdenes directas**, por ejemplo:\n• *"abone 50 mil de addi"*\n• *"gané 80k en uber"*\n• *"pagué 15k de gasolina"*\n• *"¿cuánto dinero tengo libre hoy?"*`;
-  }
-
-  // Generic Intelligent Fallback
-  return `💡 **Análisis Financiero Antigravity:** Actualmente cuentas con **${formatCOP(
+  // 10. Fallback contextual e inteligente
+  return `💡 **Asistente SVR:** Cuentas con **${formatCOP(
     summary.realmenteLibre
-  )}** realmente libres (${formatCOP(
-    summary.puedesGastarHoy
-  )}/día). Si quieres registrar un gasto o abono, solo dime por ejemplo: *"abone 50 mil a addi"* o *"pagué 15k de gasolina"*.`;
+  )}** libres en tus cuentas. Puedes preguntarme sobre tu tarjeta de crédito, Addi, tu moto Pulsar, o dictarme gastos e ingresos en lenguaje natural.`;
 }
