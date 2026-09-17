@@ -14,6 +14,8 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatCOP } from '../../utils/formatters';
 import { Modal } from '../ui/Modal';
 
+import { CloudSyncSettings } from './CloudSyncSettings';
+
 export const ConfiguracionView: React.FC = () => {
   const {
     initialBalance,
@@ -90,10 +92,10 @@ export const ConfiguracionView: React.FC = () => {
       <div>
         <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
           <Settings className="text-slate-400" />
-          Configuración & Seguridad Local
+          Configuración & Sincronización
         </h2>
         <p className="text-xs text-slate-400 mt-1">
-          Control total sobre tus datos financieros, backups local storage y saldo base
+          Sincronización en tiempo real en la nube, backups y control de saldos
         </p>
       </div>
 
@@ -103,18 +105,8 @@ export const ConfiguracionView: React.FC = () => {
         </div>
       )}
 
-      {/* Security Banner */}
-      <div className="glass-card p-6 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/30 flex items-start gap-4">
-        <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 shrink-0">
-          <ShieldCheck size={28} />
-        </div>
-        <div className="space-y-1">
-          <h4 className="text-base font-bold text-white">Privacidad 100% Garantizada</h4>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Tus datos financieros residen únicamente en tu navegador vía <code className="text-emerald-400 font-mono">localStorage</code>. No se envían a servidores externos ni servicios de IA en la nube.
-          </p>
-        </div>
-      </div>
+      {/* Cloud Sync in Realtime */}
+      <CloudSyncSettings />
 
       {/* Initial Base Balance Config */}
       <div className="glass-card p-6 rounded-3xl space-y-4 border border-slate-800">

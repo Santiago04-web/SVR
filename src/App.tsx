@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinanceStore } from './store/useFinanceStore';
 import { SidebarNav } from './components/layout/SidebarNav';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -6,6 +6,7 @@ import { FloatingActionButton } from './components/layout/FloatingActionButton';
 import { QuickAddModal } from './components/layout/QuickAddModal';
 import { MobileMenuModal } from './components/layout/MobileMenuModal';
 import { AiAssistantModal } from './components/ui/AiAssistantModal';
+import { cloudSyncEngine } from './services/cloudSyncEngine';
 
 // Views
 import { OverviewView } from './components/dashboard/OverviewView';
@@ -26,6 +27,18 @@ export function App() {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+
+  // Initialize Realtime Cloud Sync and subscribe to store updates
+  useEffect(() => {
+    cloudSyncEngine.init();
+
+    const unsub = useFinanceStore.subscribe((_state, prevState) => {
+      // Trigger cloud push on meaningful state mutations
+      cloudSyncEngine.triggerLocalStateChanged();
+    });
+
+    return () => unsub();
+  }, []);
 
   const renderActiveView = () => {
     switch (activeView) {
