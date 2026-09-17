@@ -95,6 +95,10 @@ interface FinanceState {
   aboneDebt: (debtId: string, amount: number, accountId?: string, customNote?: string) => void;
   updateDebt: (debt: Debt) => void;
 
+  // Scenarios
+  addScenario: (scenario: Omit<Scenario, 'id'>) => void;
+  deleteScenario: (id: string) => void;
+
   // Storage & Export/Import
   exportJSON: () => string;
   importJSON: (jsonStr: string) => boolean;
@@ -382,12 +386,12 @@ export const useFinanceStore = create<FinanceState>()(
         })),
 
       // Scenarios
-      addScenario: (newS) =>
+      addScenario: (newS: Omit<Scenario, 'id'>) =>
         set((state) => ({
           scenarios: [...state.scenarios, { ...newS, id: `scen-${Date.now()}` }],
         })),
 
-      deleteScenario: (id) =>
+      deleteScenario: (id: string) =>
         set((state) => ({
           scenarios: state.scenarios.filter((s) => s.id !== id),
         })),
