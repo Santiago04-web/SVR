@@ -540,6 +540,14 @@ export const useFinanceStore = create<FinanceState>()(
           localStorage.removeItem(name);
         },
       })),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Ensure new structured debts exist in state if missing or outdated
+          if (!state.debts || state.debts.length < SEED_DEBTS.length) {
+            state.debts = SEED_DEBTS;
+          }
+        }
+      },
     }
   )
 );
