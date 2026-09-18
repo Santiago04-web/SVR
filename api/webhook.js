@@ -86,11 +86,17 @@ function parseBancolombiaSms(rawInput) {
     parsedAmount = parseFloat(numStr);
   }
 
-  // Fallback for isolated amounts (explicitly excluding card/account numbers like *1329)
+  // Fallback for isolated amounts (explicitly excluding card/account numbers, dates, and phone numbers)
   if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-    // Strip card numbers like *1329, *7688, etc. before matching numbers
-    const sanitizedForNumbers = raw.replace(/[*#]\d+/g, '').replace(/t\.(?:deb|cred)\s*\d+/gi, '');
-    const loneMatch = sanitizedForNumbers.match(/\b(\d{4,9})\b/);
+    const sanitized = raw
+      .replace(/[*#]\d+/g, '') // *1329
+      .replace(/t\.(?:deb|cred)\s*\d+/gi, '') // T.Deb 1329
+      .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, '') // 15/09/2026
+      .replace(/\b\d{1,2}:\d{2}\b/g, '') // 22:03
+      .replace(/\b(?:018000|604)\d+\b/g, '') // 018000931987, 6045109095
+      .replace(/\b\d{10}\b/g, ''); // 10 digit phone numbers
+
+    const loneMatch = sanitized.match(/\b(\d{3,9})\b/);
     if (loneMatch) parsedAmount = parseFloat(loneMatch[1]);
   }
 
