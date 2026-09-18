@@ -51,10 +51,15 @@ function parseBancolombiaSms(rawInput) {
 
   // 1. Amount Extraction
   let parsedAmount = 0;
-  const amountMatch = raw.match(/\$\s*([\d.,]+)|\b([\d.,]+)\s*cop\b|por\s+\$?\s*([\d.,]+)/i);
+  
+  // Try priority matches first: $40.000,00 or Compraste 40.000,00 or por $40.000
+  const amountMatch =
+    raw.match(/\$\s*([\d.,]+)/i) ||
+    raw.match(/(?:compraste|pagaste|transferiste|pago por|por valor de|por)\s*\$?\s*([\d.,]+)/i) ||
+    raw.match(/\b([\d.,]+)\s*cop\b/i);
 
   if (amountMatch) {
-    let numStr = (amountMatch[1] || amountMatch[2] || amountMatch[3]).replace(/\s+/g, '');
+    let numStr = (amountMatch[1] || amountMatch[0]).replace(/\$/g, '').replace(/\s+/g, '');
     if (numStr.includes('.') && numStr.includes(',')) {
       if (numStr.lastIndexOf(',') > numStr.lastIndexOf('.')) {
         // 49.200,00 -> 49200
@@ -81,9 +86,11 @@ function parseBancolombiaSms(rawInput) {
     parsedAmount = parseFloat(numStr);
   }
 
-  // Fallback for isolated numbers
+  // Fallback for isolated amounts (explicitly excluding card/account numbers like *1329)
   if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-    const loneMatch = raw.match(/\b(\d{4,9})\b/);
+    // Strip card numbers like *1329, *7688, etc. before matching numbers
+    const sanitizedForNumbers = raw.replace(/[*#]\d+/g, '').replace(/t\.(?:deb|cred)\s*\d+/gi, '');
+    const loneMatch = sanitizedForNumbers.match(/\b(\d{4,9})\b/);
     if (loneMatch) parsedAmount = parseFloat(loneMatch[1]);
   }
 
