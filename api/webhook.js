@@ -1,40 +1,87 @@
-﻿import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://xdexbunttiykmaykpoyr.supabase.co';
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_AoWQ1iCtVWRQ_FBf_EhKsg_I3IM5MzS';
 const VAULT_ID = 'svr-2026';
 
-function parseBancolombiaSms(text) {
-  if (!text || typeof text !== 'string') return null;
-  const raw = text.trim();
+function extractSmsText(input) {
+  if (!input) return '';
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input);
+      return extractSmsText(parsed);
+    } catch {
+      return input.trim();
+    }
+  }
+  if (Array.isArray(input)) {
+    return extractSmsText(input[0]);
+  }
+  if (typeof input === 'object') {
+    // Check known keys
+    const direct =
+      input.mensaje ||
+      input.message ||
+      input.content ||
+      input.text ||
+      input.body ||
+      input.plainText ||
+      input.value;
+    if (direct) return extractSmsText(direct);
+
+    // Search object values for something looking like an SMS
+    for (const val of Object.values(input)) {
+      if (typeof val === 'string' && (val.toLowerCase().includes('bancolombia') || val.includes('$') || val.toLowerCase().includes('transferiste') || val.toLowerCase().includes('compraste'))) {
+        return val.trim();
+      }
+      if (typeof val === 'object' && val !== null) {
+        const nested = extractSmsText(val);
+        if (nested) return nested;
+      }
+    }
+    return JSON.stringify(input);
+  }
+  return String(input);
+}
+
+function parseBancolombiaSms(rawInput) {
+  const raw = extractSmsText(rawInput);
+  if (!raw || raw.length < 5) return null;
   const lower = raw.toLowerCase();
 
-  // 1. Amount
-  const amountMatch = raw.match(/\$\s*([\d.,]+)|\b([\d.,]+)\s*cop\b/i);
+  // 1. Amount Extraction
   let parsedAmount = 0;
+  const amountMatch = raw.match(/\$\s*([\d.,]+)|\b([\d.,]+)\s*cop\b|por\s+\$?\s*([\d.,]+)/i);
 
   if (amountMatch) {
-    let numStr = (amountMatch[1] || amountMatch[2]).replace(/\s+/g, '');
+    let numStr = (amountMatch[1] || amountMatch[2] || amountMatch[3]).replace(/\s+/g, '');
     if (numStr.includes('.') && numStr.includes(',')) {
       if (numStr.lastIndexOf(',') > numStr.lastIndexOf('.')) {
-        numStr = numStr.replace(/\./g, '').replace(',', '.');
+        // 49.200,00 -> 49200
+        numStr = numStr.split(',')[0].replace(/\./g, '');
       } else {
-        numStr = numStr.replace(/,/g, '');
+        // 25,000.00 -> 25000
+        numStr = numStr.split('.')[0].replace(/,/g, '');
       }
     } else if (numStr.includes('.')) {
       const parts = numStr.split('.');
       if (parts[parts.length - 1].length === 3) {
         numStr = numStr.replace(/\./g, '');
+      } else if (parts[parts.length - 1].length === 2) {
+        numStr = parts[0].replace(/\./g, '');
       }
     } else if (numStr.includes(',')) {
       const parts = numStr.split(',');
       if (parts[parts.length - 1].length === 3) {
         numStr = numStr.replace(/,/g, '');
+      } else if (parts[parts.length - 1].length === 2) {
+        numStr = parts[0].replace(/,/g, '');
       }
     }
     parsedAmount = parseFloat(numStr);
   }
 
+  // Fallback for isolated numbers
   if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
     const loneMatch = raw.match(/\b(\d{4,9})\b/);
     if (loneMatch) parsedAmount = parseFloat(loneMatch[1]);
@@ -44,11 +91,11 @@ function parseBancolombiaSms(text) {
 
   // 2. Type (Ingreso vs Gasto)
   const isIncome =
-    lower.includes('recibiste') ||
+    (lower.includes('recibiste') && !lower.includes('transferiste') && !lower.includes('compraste')) ||
     lower.includes('transferencia recibida') ||
     lower.includes('te enviaron') ||
     lower.includes('abono recibido') ||
-    lower.includes('pago por') ||
+    lower.includes('recibiste un pago') ||
     lower.includes('pago de nomina') ||
     lower.includes('consignacion');
 
@@ -58,7 +105,7 @@ function parseBancolombiaSms(text) {
   let paymentMethod = 'debito';
   let installments = undefined;
 
-  if (lower.includes('t.cred') || lower.includes('tarjeta de credito') || lower.includes('t.crédito') || lower.includes('credito')) {
+  if (lower.includes('t.cred') || lower.includes('tarjeta de credito') || lower.includes('t.crédito') || lower.includes('credito') || lower.includes('crédito')) {
     paymentMethod = 'tarjeta_credito';
     const cuotasMatch = raw.match(/a\s*(\d+)\s*cuota/i) || raw.match(/(\d+)\s*cuotas/i);
     const cuotas = cuotasMatch ? parseInt(cuotasMatch[1]) : 1;
@@ -70,7 +117,7 @@ function parseBancolombiaSms(text) {
   }
 
   // 4. Commerce & Category
-  let description = isIncome ? 'Ingreso Bancolombia' : 'Compra Bancolombia';
+  let description = isIncome ? 'Ingreso Bancolombia' : 'Movimiento Bancolombia';
   let category = 'Varios';
 
   const enMatch = raw.match(/\ben\s+([A-Za-z0-9\s._-]+?)(?:\s+con|\s+el|\s+por|\.|\d|\n|$)/i);
@@ -83,6 +130,8 @@ function parseBancolombiaSms(text) {
     description = deMatch[1].trim().toUpperCase();
   } else if (aCuentaMatch) {
     description = `Transferencia a ${aCuentaMatch[1]}`;
+  } else if (lower.includes('transferiste')) {
+    description = 'Transferencia Bancolombia';
   }
 
   const descLower = description.toLowerCase();
@@ -153,20 +202,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = req.body || {};
-    const smsText = body.mensaje || body.message || body.text || body.body || (typeof body === 'string' ? body : '');
+    const rawSms = extractSmsText(req.body);
 
-    if (!smsText) {
+    if (!rawSms) {
       return res.status(400).json({
-        error: 'No SMS message received in request body. Use { "mensaje": "..." }',
+        error: 'No SMS text detected in request body',
+        receivedBody: req.body,
       });
     }
 
-    const transaction = parseBancolombiaSms(smsText);
+    const transaction = parseBancolombiaSms(rawSms);
     if (!transaction) {
       return res.status(422).json({
-        error: 'No se pudo interpretar el monto o formato del SMS bancario.',
-        receivedText: smsText,
+        error: 'No se pudo interpretar el monto del SMS bancario.',
+        receivedText: rawSms,
       });
     }
 
