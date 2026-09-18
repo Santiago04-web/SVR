@@ -9,8 +9,8 @@ import type {
   PlannedPurchase,
 } from '../types/finance';
 
-// Saldo disponible REAL en Bancolombia HOY (16 de septiembre de 2026)
-export const INITIAL_BASE_BALANCE = 507000;
+// Saldo disponible REAL en Bancolombia HOY (18 de septiembre de 2026)
+export const INITIAL_BASE_BALANCE = 490000;
 
 // Dinero actualmente APARTADO
 export const INITIAL_RESERVED_AMOUNT = 0;
@@ -20,7 +20,7 @@ export const SEED_ACCOUNTS = [
     id: 'bancolombia',
     name: 'Bancolombia (Principal)',
     type: 'bancolombia' as const,
-    balance: 507000,
+    balance: 490000,
     color: '#00c853',
     isMain: true,
   },
@@ -28,14 +28,14 @@ export const SEED_ACCOUNTS = [
     id: 'efectivo',
     name: 'Efectivo (Bolsillo / Uber)',
     type: 'efectivo' as const,
-    balance: 93000,
+    balance: 28000,
     color: '#f59e0b',
   },
   {
     id: 'nequi',
     name: 'Nequi',
     type: 'nequi' as const,
-    balance: 53000,
+    balance: 31000,
     color: '#ec4899',
   },
   {
