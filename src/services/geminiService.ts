@@ -1,4 +1,5 @@
 import { formatCOP } from '../utils/formatters';
+import { getTodayISO } from '../utils/dates';
 import type { FinancialSummary, Obligation, CreditCard, Debt, BankAccount, Transaction } from '../types/finance';
 
 const GEMINI_STORAGE_KEY = 'svr_finanzas_gemini_api_key';
