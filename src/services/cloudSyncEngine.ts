@@ -20,10 +20,16 @@ class CloudSyncEngine {
   private lastSyncedHash = '';
 
   constructor() {
-    // Listen to window online / offline events
+    // Listen to window online / offline and focus/visibility events
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.handleNetworkChange(true));
       window.addEventListener('offline', () => this.handleNetworkChange(false));
+      window.addEventListener('focus', () => this.pullRemoteToLocal());
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.pullRemoteToLocal();
+        }
+      });
     }
   }
 
@@ -52,6 +58,45 @@ class CloudSyncEngine {
     }
   }
 
+  public async pullRemoteToLocal(): Promise<boolean> {
+    const config = getStoredSupabaseConfig();
+    if (!config.isEnabled || !config.url || !config.anonKey) return false;
+
+    const client = getSupabaseClient();
+    if (!client) return false;
+
+    try {
+      const vaultId = config.syncPin || 'svr-2026';
+      const { data, error } = await client
+        .from('user_finances')
+        .select('*')
+        .eq('vault_id', vaultId)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Supabase pull error:', error.message);
+        return false;
+      }
+
+      if (data && data.state_json) {
+        const parsed = typeof data.state_json === 'string' ? JSON.parse(data.state_json) : data.state_json;
+        const currentHash = JSON.stringify(parsed);
+        if (currentHash !== this.lastSyncedHash) {
+          this.isApplyingRemoteUpdate = true;
+          useFinanceStore.getState().importJSON(JSON.stringify(parsed));
+          this.isApplyingRemoteUpdate = false;
+          this.lastSyncedHash = currentHash;
+          this.setStatus('synced', '🟢 Sincronizado en vivo');
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Error in pullRemoteToLocal:', e);
+      return false;
+    }
+  }
+
   public async init() {
     const config = getStoredSupabaseConfig();
     if (!config.isEnabled || !config.url || !config.anonKey) {
@@ -71,35 +116,8 @@ class CloudSyncEngine {
       const vaultId = config.syncPin || 'svr-2026';
 
       // 1. Pull latest state from Supabase
-      const { data, error } = await client
-        .from('user_finances')
-        .select('*')
-        .eq('vault_id', vaultId)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Supabase pull note:', error.message);
-        if (error.message.includes('does not exist') || error.message.includes('relation') || error.code === '42P01') {
-          this.setStatus('error', '⚠️ Falta presionar "Run" en el SQL Editor de Supabase para crear la tabla.');
-        } else if (error.message.includes('JWT') || error.message.includes('apikey') || error.message.includes('Invalid API key')) {
-          this.setStatus('error', '⚠️ La clave Anon Key no es válida. Revisa que coincida con la de tu panel.');
-        } else {
-          this.setStatus('error', `Error de conexión: ${error.message}`);
-        }
-        return;
-      } else if (data && data.state_json) {
-        // If remote data exists, apply to store
-        try {
-          const parsed = typeof data.state_json === 'string' ? JSON.parse(data.state_json) : data.state_json;
-          this.isApplyingRemoteUpdate = true;
-          useFinanceStore.getState().importJSON(JSON.stringify(parsed));
-          this.isApplyingRemoteUpdate = false;
-          this.lastSyncedHash = JSON.stringify(parsed);
-          this.setStatus('synced', '🟢 Sincronizado en vivo');
-        } catch (e) {
-          console.error('Failed to parse remote financial JSON:', e);
-        }
-      } else {
+      const pulled = await this.pullRemoteToLocal();
+      if (!pulled) {
         // First time initialization: push current local state to cloud
         await this.pushLocalToRemote();
       }
